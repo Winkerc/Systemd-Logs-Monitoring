@@ -1,0 +1,365 @@
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --background-color: #f5f6fa;
+    --text-color: #2c3e50;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    color: var(--primary-color);
+    font-size: 2.5rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 2rem 0;
+    margin: 0;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+a {
+    color: var(--secondary-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #2980b9;
+}
+
+p {
+    margin: 1rem 0;
+    padding: 0 1rem;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Style pour les blocs */
+.block {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Navigation */
+nav {
+    background-color: white;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+nav a,
+nav span.nav-link {
+    margin: 0 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    display: inline-block;
+    transition: background-color 0.3s ease, border-bottom 0.3s ease;
+}
+
+nav a:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+/* Lien actif de navigation */
+nav span.nav-link {
+    background-color: var(--secondary-color);
+    color: white;
+    cursor: default;
+    border-bottom: 3px solid #2980b9;
+    font-weight: 600;
+}
+
+nav a.nav-active {
+    background-color: var(--secondary-color);
+    color: white;
+    border-bottom: 3px solid #2980b9;
+    font-weight: 600;
+}
+
+/* User display in navbar */
+.nav-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-left: 1rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(52,152,219,0.1), rgba(44,62,80,0.04));
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--secondary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    font-size: 1rem;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+/* Styles pour les alertes/messages flash */
+.alert {
+    padding: 1rem 1.5rem;
+    margin: 1rem 0;
+    border-radius: 6px;
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Message de succès */
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left-color: #28a745;
+}
+
+.alert-success::before {
+    content: "✓";
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Message d'erreur/danger */
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left-color: #dc3545;
+}
+
+.alert-danger::before {
+    content: "✕";
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Message d'avertissement */
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left-color: #ffc107;
+}
+
+.alert-warning::before {
+    content: "⚠";
+    font-size: 1.5rem;
+}
+
+/* Message informatif */
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-left-color: #17a2b8;
+}
+
+.alert-info::before {
+    content: "ℹ";
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Fermeture des alertes au survol (optionnel) */
+.alert:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Table utilities for users page */
+.table-responsive {
+    overflow-x: auto;
+}
+
+table.beautiful-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+table.beautiful-table th,
+table.beautiful-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eef2f6;
+    vertical-align: middle;
+}
+
+table.beautiful-table th {
+    background: linear-gradient(90deg, rgba(236,240,241,1) 0%, rgba(246,249,250,1) 100%);
+    font-weight: 600;
+}
+
+table.beautiful-table tr:hover td {
+    background-color: #fbfcfd;
+}
+
+/* Badges for role */
+.role-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+.role-consult { background-color: #6c757d; }
+.role-serveurs { background-color: #1762b8; }
+.role-admin { background-color: #b82f14; }
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.15s ease, transform 0.06s ease;
+}
+
+.btn-primary { background-color: var(--secondary-color); color: white; }
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-outline { background-color: transparent; border: 1px solid #d0d6dc; color: var(--text-color); }
+
+.btn:hover { transform: translateY(-1px); }
+
+/* Form styles */
+.form-inline {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.form-inline input[type="text"],
+.form-inline input[type="password"],
+.form-inline select {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #dfe6ea;
+    background: #fff;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+/* Responsive tweaks */
+@media (max-width: 720px) {
+    .form-inline { flex-direction: column; align-items: stretch; }
+    .btn { width: 100%; }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.logs-box {
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.logs-header {
+    padding: 15px;
+    background: #667eea;
+    color: white;
+    font-weight: bold;
+}
+
+.logs-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.logs-content {
+    max-height: 500px;
+    overflow-y: auto;
+    background: #1e1e1e;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.log-line {
+    color: #d4d4d4;
+    padding: 5px 0;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.log-line:last-child {
+    border-bottom: none;
+}
+
+/* Scrollbar */
+.logs-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.logs-content::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+.logs-content::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 5px;
+}

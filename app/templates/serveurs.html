@@ -1,0 +1,110 @@
+{% extends 'index.html' %}
+{% block body %}
+
+<div class="block">
+
+    <h2>Bienvenue sur la page des Serveurs</h2>
+        <div class="table-responsive">
+            <table class="beautiful-table">
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>IP</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                {% for server in servers %}
+                <tr>
+                    <td>{{ server.name }}</td>
+                    <td>{{ server.ip }}</td>
+                    <td>{{ server.description }}</td>
+
+
+                    <td>
+                        <form method="POST" action="{{ url_for('main.serveurs') }}">
+                            <input type="hidden" name="server_id_ping" value="{{ server.id }}">
+                            <button type="submit" class="btn">Tester</button>
+                        </form>
+
+                        <form method="POST" action="{{ url_for('main.serveurs') }}">
+                            <input type="hidden" name="del_serv_id" value="{{ server.id }}">
+                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                        </form>
+                    </td>
+
+
+                </tr>
+
+
+
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    <hr>
+
+    <h3>Ajouter un serveur</h3>
+        <form method="POST" action="{{ url_for('main.serveurs') }}" class="form-inline form-modify">
+          <div class="form-group">
+            <label for="name">Nom du serveur</label>
+            <input type="text" id="name" name="name" placeholder="serveur1" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ip">IP du serveur</label>
+            <input type="text" id="ip" name="ip" placeholder="192.168.122.106" required>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" id="description" name="description" placeholder="Serveur de gestion" required>
+          </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Ajouter</button>
+        <button type="reset" class="btn btn-outline">Réinitialiser</button>
+      </div>
+    </form>
+
+    <hr>
+
+        <h3>Modifier un serveur</h3>
+        <form method="POST" action="{{ url_for('main.serveurs') }}" class="form-inline form-modify">
+
+            <div class="form-group">
+                <label for="modif_id_server">Serveur</label>
+                <select id="modif_id_server" name="modif_id_server" required>
+                  <option value="" disabled selected>Choisir un Serveur</option>
+                  {% for server in servers %}
+                    <option value="{{ server.id }}">{{ server.name }}</option>
+                  {% endfor %}
+                </select>
+            </div>
+
+          <div class="form-group">
+            <label for="name_modif">Nom du serveur</label>
+            <input type="text" id="name_modif" name="name_modif" placeholder="serveur1" >
+          </div>
+
+          <div class="form-group">
+            <label for="ip_modif">IP du serveur</label>
+            <input type="text" id="ip_modif" name="ip_modif" placeholder="192.168.122.106" >
+          </div>
+
+          <div class="form-group">
+            <label for="description_modif">Description</label>
+            <input type="text" id="description_modif" name="description_modif" placeholder="Serveur de gestion" >
+          </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Modifier</button>
+        <button type="reset" class="btn btn-outline">Réinitialiser</button>
+      </div>
+    </form>
+
+</div>
+{% endblock %}

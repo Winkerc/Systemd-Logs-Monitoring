@@ -1,0 +1,3 @@
+ssh_user: "qamu"
+ssh_priv_key_path: "/home/qamu/.ssh/id_rsa_SAE302"
+mariadb_logs_user_password: "admin"

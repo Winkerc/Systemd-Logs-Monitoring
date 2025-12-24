@@ -1,0 +1,32 @@
+{% extends 'index.html' %}
+{% block body %}
+<div class="block">
+
+    <h2>Bienvenue sur la page de Login</h2>
+
+    <div class="login-container">
+        <h1>Connexion</h1>
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="remember"> Se souvenir de moi
+                </label>
+            </div>
+
+            <button type="submit">Se connecter</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

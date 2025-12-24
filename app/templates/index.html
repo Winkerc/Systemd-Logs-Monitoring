@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAE302-Appli_Communiquantes</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}">
+  </head>
+
+  <body>
+    <header>
+      <h1>HUB de gestion de Logs</h1>
+      <nav>
+          {% if request.endpoint == 'main.index' %}
+            <span class="nav-link" aria-current="page">Accueil</span>
+          {% else %}
+            <a href="{{ url_for('main.index') }}" class="nav-link">Accueil</a>
+          {% endif %}
+
+          {% if request.endpoint == 'main.journaux' %}
+            <span class="nav-link" aria-current="page">Journaux</span>
+          {% else %}
+            <a href="{{ url_for('main.journaux') }}" class="nav-link">Journaux</a>
+          {% endif %}
+
+          {% if request.endpoint == 'main.serveurs' %}
+            <span class="nav-link" aria-current="page">Serveurs</span>
+          {% else %}
+            <a href="{{ url_for('main.serveurs') }}" class="nav-link">Serveurs</a>
+          {% endif %}
+
+          {% if request.endpoint == 'main.utilisateurs' %}
+            <span class="nav-link" aria-current="page">Utilisateurs</span>
+          {% else %}
+            <a href="{{ url_for('main.utilisateurs') }}" class="nav-link">Utilisateurs</a>
+          {% endif %}
+
+          {% if request.endpoint == 'main.logout' %}
+            <span class="nav-link" aria-current="page">Déconnexion</span>
+          {% else %}
+            <a href="{{ url_for('main.logout') }}" class="nav-link">Déconnexion</a>
+          {% endif %}
+
+          {% if current_user.is_authenticated %}
+            {% set _name = current_user.username or current_user.get_id() %}
+            <div class="nav-user" title="{{ _name }}">
+              <div class="user-avatar">{{ _name[:1]|upper }}</div>
+              <div class="user-name">{{ _name }}</div>
+            </div>
+          {% endif %}
+        </nav>
+
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </header>
+
+    <div class="container">
+      {% block body %}
+        <div class="block">
+          <h2>Bienvenue sur le Hub de gestion de Logs</h2>
+          <p>Cette application vous permet de gérer et analyser vos fichiers de logs système de manière efficace et organisée.</p>
+        </div>
+      {% endblock %}
+    </div>
+  </body>
+</html>

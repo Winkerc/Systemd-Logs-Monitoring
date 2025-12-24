@@ -1,0 +1,138 @@
+{% extends 'index.html' %}
+{% block body %}
+
+<div class="block">
+
+    <h2>Gestion des utilisateurs</h2>
+
+    <div class="table-responsive">
+      <table class="beautiful-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>ID</th>
+            <th>Nom d'utilisateur</th>
+            <th>Rôle</th>
+          </tr>
+        </thead>
+
+        <tbody>
+        {% for user in users %}
+
+          <tr>
+            <td>
+              <form method="POST" action="{{ url_for('main.utilisateurs') }}">
+                <input type="hidden" name="user_id_del" value="{{ user.id }}">
+                <button type="submit" class="btn btn-danger">Supprimer</button>
+              </form>
+            </td>
+
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>
+                {% if user.role %}
+                    {% if user.role.privileges == 2 %}
+                        <span class="role-badge role-consult">{{ user.role.description }}</span>
+                    {% elif user.role.privileges == 3 %}
+                        <span class="role-badge role-serveurs">{{ user.role.description }}</span>
+                    {% elif user.role.privileges == 7 %}
+                        <span class="role-badge role-admin">{{ user.role.description }}</span>
+                    {% else %}
+                        <span class="role-badge role-consult">{{ user.role.description }}</span>
+                    {% endif %}
+                {% else %}
+                    <span class="role-badge role-consult">Aucun</span>
+                {% endif %}
+            </td>
+          </tr>
+
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <hr>
+
+    <h3>Ajouter un nouvel utilisateur</h3>
+    <form method="POST" action="{{ url_for('main.utilisateurs') }}" class="form-inline">
+      <div class="form-group">
+        <label for="username">Nom d'utilisateur</label>
+        <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" placeholder="Mot de passe" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password_confirm">Confirmer le mot de passe</label>
+        <input type="password" id="password_confirm" name="password_confirm" placeholder="Mot de passe">
+      </div>
+
+      <div class="form-group">
+        <label for="role_id">Rôle</label>
+        <select id="role_id" name="role_id" required>
+          <option value="" disabled selected>Choisir un rôle</option>
+          {% for role in roles %}
+            <option value="{{ role.id }}">{{ role.description }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Ajouter</button>
+        <button type="reset" class="btn btn-outline">Réinitialiser</button>
+      </div>
+    </form>
+
+    <hr>
+
+    <h3>Modifier un utilisateur</h3>
+    <form method="POST" action="{{ url_for('main.utilisateurs') }}" class="form-inline form-modify">
+
+      <div class="form-group">
+        <label for="id_user_modif">Utilisateur</label>
+        <select id="id_user_modif" name="id_user_modif" required>
+          <option value="" disabled selected>Choisir un Utilisateur</option>
+          {% for user in users %}
+            <option value="{{ user.id }}">{{ user.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="username_modif">Nom d'utilisateur</label>
+        <input type="text" id="username_modif" name="username_modif" placeholder="Nom d'utilisateur">
+      </div>
+
+      <div class="form-group">
+        <label for="password_modif">Mot de passe</label>
+        <input type="password" id="password_modif" name="password_modif" placeholder="Mot de passe">
+      </div>
+
+      <div class="form-group">
+        <label for="password_modif_confirm">Confirmer le mot de passe</label>
+        <input type="password" id="password_modif_confirm" name="password_modif_confirm" placeholder="Mot de passe">
+      </div>
+
+      <div class="form-group">
+        <label for="role_id_modif">Rôle</label>
+        <select id="role_id_modif" name="role_id_modif">
+          <option value="" disabled selected>Choisir un rôle</option>
+          {% for role in roles %}
+            <option value="{{ role.id }}">{{ role.description }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Modifier</button>
+        <button type="reset" class="btn btn-outline">Réinitialiser</button>
+      </div>
+
+    </form>
+
+</div>
+
+{% endblock %}
