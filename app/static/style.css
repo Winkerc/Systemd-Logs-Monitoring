@@ -350,6 +350,28 @@ table.beautiful-table tr:hover td {
     border-bottom: none;
 }
 
+/* Styles pour les différentes parties du log */
+.log-timestamp {
+    color: #4ec9b0;  /* Cyan/turquoise pour le timestamp */
+    font-weight: 600;
+    margin-right: 8px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.log-server {
+    color: #ce9178;  /* Orange clair pour le nom du serveur */
+    font-weight: 700;
+    margin-right: 6px;
+    background: rgba(206, 145, 120, 0.1);
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+.log-arrow {
+    color: #858585;  /* Gris pour la flèche */
+    margin: 0 6px;
+}
+
 /* Scrollbar */
 .logs-content::-webkit-scrollbar {
     width: 10px;

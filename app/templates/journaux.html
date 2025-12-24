@@ -2,9 +2,9 @@
 {% block body %}
 <div class="block">
 
-    <h2>Bienvenue sur la page des Journaux</h2>
+    <h2>Consultation des Journaux</h2>
 
-    <form method="POST" action="{{ url_for('main.journaux') }}" class="form-modify">
+    <form method="POST" action="{{ url_for('main.journaux') }}" class="form-inline">
         <div class="form-group">
             <label for="id_serv_select">Serveurs (Ctrl + clic pour sélectionner plusieurs)</label>
             <select id="id_serv_select" name="id_serv_select" multiple size="5" required>
@@ -15,25 +15,35 @@
         </div>
 
         <div class="form-group">
-            <label for="nb_lignes">Nombres de lignes (de base à 100)</label>
+            <label for="nb_lignes">Nombres de lignes (par défaut 100)</label>
             <input type="text" id="nb_lignes" name="nb_lignes" placeholder="180">
         </div>
 
-        <button type="submit" class="btn btn-primary">Afficher les logs</button>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Afficher les logs</button>
+            <button type="reset" class="btn btn-outline">Réinitialiser</button>
+        </div>
     </form>
 
-    {% for logs in logs_servers %}
+    {% if all_logs %}
+        <hr>
         <div class="logs-box">
             <div class="logs-header">
-                <h3>Logs du serveur : {{ logs[0] }}</h3>
+                <h3>Journaux</h3>
             </div>
             <div class="logs-content">
-                {% for log in logs[1] %}
-                    <div class="log-line">{{ log }}</div>
+                {% for log in all_logs %}
+                    <div class="log-line">
+                        <span class="log-timestamp">{{ log['timestamp'].strftime('%H:%M:%S') }}</span>
+                        <span class="log-server">{{ log['server'] }}</span>
+                        <span class="log-arrow">→</span>
+                        <span>{{ log['line'] }}</span>
+                    </div>
                 {% endfor %}
             </div>
         </div>
-    {% endfor %}
+    {% endif %}
+
 
 </div>
 {% endblock %}

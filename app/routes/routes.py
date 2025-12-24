@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import *
 from app.services import *
+from datetime import datetime
 
 main = Blueprint('main', __name__, template_folder='../templates')
 
@@ -55,6 +56,7 @@ def journaux():
     servers = get_all_servers()
     #logs = get_syslog("192.168.122.106").split("\n")
     logs_servers = []
+    all_logs = []
     if request.method == "POST":
         id_serv_list_select = request.form.getlist("id_serv_select") # ID du serv selectionné
         nb_lignes = request.form.get("nb_lignes") # Nombre de lignes à récupérer
@@ -87,9 +89,16 @@ def journaux():
                 else:
                     flash("Serveur introuvable.", "danger")
 
-        return render_template("journaux.html", logs_servers=logs_servers, servers=servers)
+            for server_name, logs in logs_servers:
+                for log in logs:
+                    if log != "":
+                        all_logs.append({'server': server_name, 'line': log, 'timestamp': extract_timestamp(log)}) # On ajoute le timestamp pour le tri
 
-    return render_template("journaux.html", logs_servers=logs_servers, servers=servers)
+            all_logs.sort(key=lambda x: x['timestamp'])  # Tri par timestamp, x['timestamp'] est un datetime
+
+        return render_template("journaux.html", all_logs=all_logs, servers=servers)
+
+    return render_template("journaux.html", all_logs=all_logs, servers=servers)
 
 @main.route("/serveurs", methods=["GET","POST"])
 @login_required
@@ -303,5 +312,19 @@ def get_all_servers()->list:
     """
     return Server.query.all()
 
+def extract_timestamp(log_line):
+    """
+    Extrait et parse le timestamp d'une ligne de log.
+    :param log_line: Ligne de log
+    :return: datetime
+    """
+    try:
+        timestamp_str = log_line.split()[0]
+        # Parser avec timezone
+        dt = datetime.fromisoformat(timestamp_str)
+        # Retirer la timezone (convert to naive datetime)
+        return dt.replace(tzinfo=None)
+    except (ValueError, IndexError):
+        return datetime.min
 
 # TODO : Corriger le style de la partie modif d'utilisateur dans utilisateurs.html

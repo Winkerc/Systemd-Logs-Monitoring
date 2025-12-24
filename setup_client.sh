@@ -10,33 +10,67 @@ log_info() { echo "[INFO] $1"; }
 log_warn() { echo "[WARN] $1"; }
 log_error() { echo "[ERROR] $1"; }
 
+show_usage() {
+    cat << EOF
+Usage: $0 <cle_publique_ssh> [nom_utilisateur]
+
+Arguments:
+    <cle_publique_ssh>    Clé publique SSH complète pour l'authentification
+                          (doit commencer par ssh-rsa, ssh-ed25519, etc.)
+
+    [nom_utilisateur]     Nom de l'utilisateur qui sera créé sur cette machine
+                          pour permettre la connexion SSH et l'exécution des
+                          commandes de monitoring (défaut: qamu)
+
+Exemple:
+    $0 "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... qamu@server" qamu
+    $0 "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... monitoring@central"
+
+Note:
+    - Ce script doit être exécuté en tant que root
+    - L'utilisateur créé aura des droits sudo restreints pour lire /var/log/syslog
+    - Seules certaines commandes SSH seront autorisées (echo test, ls, sudo tail)
+
+EOF
+    exit 1
+}
+
 # Vérifier root
 if [[ $EUID -ne 0 ]]; then
-   log_error "Ce script doit être exécuté en tant que root"
+   log_error "Ce script doit être exécuté en tant que root (sudo)"
    exit 1
 fi
 
 # Vérifier l'argument
 if [ -z "$1" ]; then
-    log_error "Usage: $0 <cle_publique_ssh> [nom_utilisateur]"
-    exit 1
+    log_error "Clé publique SSH manquante"
+    echo ""
+    show_usage
 fi
 
 SSH_PUBLIC_KEY="$1"
 USERNAME="${2:-qamu}"
 
+# Valider le format de la clé SSH
+if ! echo "$SSH_PUBLIC_KEY" | grep -qE "^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) "; then
+    log_error "Format de clé SSH invalide"
+    log_error "La clé doit commencer par: ssh-rsa, ssh-ed25519, ou ecdsa-sha2-*"
+    exit 1
+fi
+
 log_info "Configuration pour l'utilisateur ${USERNAME}..."
+log_info "Machine: $(hostname)"
 
 # Installer sudo si nécessaire
 if ! command -v sudo &> /dev/null; then
     log_warn "Installation de sudo..."
-    apt-get update && apt-get install -y sudo
+    apt-get update -qq && apt-get install -y -qq sudo
 fi
 
 # Installer python3 si nécessaire
 if ! command -v python3 &> /dev/null; then
     log_warn "Installation de python3..."
-    apt-get update && apt-get install -y python3
+    apt-get update -qq && apt-get install -y -qq python3
 fi
 
 # Créer l'utilisateur
@@ -54,7 +88,7 @@ echo "${USERNAME} ALL=(ALL) NOPASSWD: /usr/bin/tail -n * /var/log/syslog" > /etc
 chmod 0440 /etc/sudoers.d/${USERNAME}
 
 # Créer le script de filtre
-log_info "Création du script de filtre..."
+log_info "Création du script de filtre des commandes SSH..."
 cat > /usr/local/bin/filter_ssh_commands_${USERNAME}.py << 'EOF'
 #!/usr/bin/env python3
 import sys
@@ -108,20 +142,29 @@ fi
 # Redémarrer SSH
 log_info "Redémarrage du service SSH..."
 if systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null; then
-    log_info "Service SSH redémarré"
+    log_info "Service SSH redémarré avec succès"
 else
     log_warn "Redémarrez SSH manuellement: systemctl restart sshd"
 fi
 
-# Résumé
+# Résumé détaillé
 echo ""
-log_info "Configuration terminée avec succès!"
+echo "============================================"
+echo "Configuration terminée avec succès"
+echo "============================================"
 echo ""
-echo "Utilisateur : ${USERNAME}"
-echo "Hostname    : $(hostname)"
-echo "IP          : $(hostname -I | awk '{print $1}')"
+echo "Machine configurée :"
+echo "  Hostname     : $(hostname)"
+echo "  IP           : $(hostname -I | awk '{print $1}')"
 echo ""
-echo "Test : ssh ${USERNAME}@\$(hostname -I | awk '{print \$1}') 'echo test'"
+echo "Utilisateur SSH créé :"
+echo "  Username     : ${USERNAME}"
+echo "  Home         : /home/${USERNAME}"
+echo "  SSH Key      : Configurée"
+echo ""
+echo "Test de connexion depuis le serveur central :"
+echo "  ssh ${USERNAME}@$(hostname -I | awk '{print $1}') 'echo test'"
+echo "  ssh ${USERNAME}@$(hostname -I | awk '{print $1}') 'sudo tail -n 50 /var/log/syslog'"
 echo ""
 
 exit 0

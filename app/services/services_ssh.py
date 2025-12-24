@@ -39,10 +39,15 @@ def get_syslog(host:str, lines:int=100, config_path:str="config.yaml") -> tuple:
         cnx = Connection(
             host=host,
             user=cfg['ssh_user'],
-            connect_kwargs={"key_filename": cfg["ssh_priv_key_path"]}
+            connect_kwargs={
+                "key_filename": cfg["ssh_priv_key_path"],
+                "timeout": 5,  # Timeout de 5 secondes pour la connexion
+                "banner_timeout": 5,  # Timeout pour la bannière SSH
+                "auth_timeout":5  # Timeout pour l'authentification
+            }
         )
 
-        result = cnx.run(f"sudo tail -n {lines} /var/log/syslog", hide=True)
+        result = cnx.run(f"sudo tail -n {lines} /var/log/syslog", hide=True, timeout=8)
 
         if result.failed:
             resultat = f"Commande échouée (code {result.return_code}). Avez vous bien installé le script sur cette machine ?"
@@ -50,16 +55,27 @@ def get_syslog(host:str, lines:int=100, config_path:str="config.yaml") -> tuple:
 
         return result.stdout, 0
 
+    except TimeoutError as e:
+        resultat = f"Timeout lors de la connexion à {host}: impossible de se connecter dans les délais impartis. Vérifiez que le serveur est accessible."
+        return resultat, 1
+
+    except ssh_exception.SSHException as e:
+        if "timed out" in str(e).lower() or "timeout" in str(e).lower():
+            resultat = f"Timeout lors de la connexion SSH à {host}: le serveur ne répond pas. Vérifiez qu'il est en ligne et accessible."
+        else:
+            resultat = f"Erreur SSH lors de la connexion à {host}: {e}"
+        return resultat, 1
+
     except ssh_exception.NoValidConnectionsError as e:
-        resultat = f"Impossible de se connecter à {host}: {e}. Est-elle en ligne ? Le script est-il installé sur cette machine ?"
+        resultat = f"Impossible de se connecter à {host}: aucune connexion valide trouvée. Est-elle en ligne ? Le port SSH est-il accessible ?"
         return resultat, 1
 
     except ssh_exception.AuthenticationException as e:
-        resultat = f"Échec d'authentification: {e}. Avez vous bien installé le script sur cette machine ?"
+        resultat = f"Échec d'authentification sur {host}: {e}. Avez vous bien installé le script sur cette machine ?"
         return resultat, 1
 
     except Exception as e:
-        resultat = f"Erreur inattendue: {e}. Avez vous bien installé le script sur cette machine ?"
+        resultat = f"Erreur inattendue lors de la connexion à {host}: {e}"
         return resultat, 1
 
     finally:

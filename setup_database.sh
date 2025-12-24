@@ -21,6 +21,7 @@ Exemple:
     $0 mon_mot_de_passe_securise
 
 Note: Ce script doit être exécuté en tant que root.
+      Un utilisateur admin (admin/admin) sera créé automatiquement dans la base de donnée.
 EOF
     exit 1
 }
@@ -68,16 +69,46 @@ VENV_DIR="/opt/monitoring_venv"
 log_info "Création de l'environnement virtuel Python dans $VENV_DIR..."
 
 if [ -d "$VENV_DIR" ]; then
+    log_info "Suppression de l'ancien venv..."
     rm -rf "$VENV_DIR"
 fi
 
 python3 -m venv "$VENV_DIR"
 
-log_info "Installation du connecteur MySQL dans le venv..."
+log_info "Installation des dépendances Python dans le venv..."
 "$VENV_DIR/bin/pip" install --quiet --upgrade pip
+
+log_info "Installation de mysql-connector-python..."
 "$VENV_DIR/bin/pip" install --quiet mysql-connector-python
 
-log_info "Environnement Python configuré"
+log_info "Installation de pymysql..."
+"$VENV_DIR/bin/pip" install --quiet "pymysql"
+
+log_info "Installation de SQLAlchemy..."
+"$VENV_DIR/bin/pip" install --quiet "sqlalchemy~=2.0.43"
+
+log_info "Installation de Flask et extensions..."
+"$VENV_DIR/bin/pip" install --quiet "flask~=3.1.2"
+"$VENV_DIR/bin/pip" install --quiet "flask-login~=0.6.3"
+"$VENV_DIR/bin/pip" install --quiet "werkzeug~=3.1.3"
+"$VENV_DIR/bin/pip" install --quiet "flask_sqlalchemy"
+
+log_info "Installation de Gunicorn..."
+"$VENV_DIR/bin/pip" install --quiet "gunicorn"
+
+log_info "Installation de PyYAML..."
+"$VENV_DIR/bin/pip" install --quiet "pyyaml~=6.0.3"
+
+log_info "Installation de Paramiko et Fabric2..."
+"$VENV_DIR/bin/pip" install --quiet "paramiko~=4.0.0"
+"$VENV_DIR/bin/pip" install --quiet --index-url https://pypi.python.org/simple "fabric2~=3.2.2"
+
+log_info "Toutes les dépendances Python ont été installées"
+
+log_info "Génération du hash du mot de passe admin..."
+
+# Générer le hash du mot de passe 'admin' avec Python/Werkzeug
+ADMIN_HASH=$("$VENV_DIR/bin/python" -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('admin'))")
 
 log_info "Configuration de la base de données..."
 
@@ -111,6 +142,10 @@ CREATE TABLE IF NOT EXISTS users (
     role_id INT NOT NULL,
     FOREIGN KEY (role_id) REFERENCES roles(id)
 );
+
+INSERT INTO users (username, password_hash, role_id) VALUES
+('admin', '$ADMIN_HASH', 3)
+ON DUPLICATE KEY UPDATE password_hash=VALUES(password_hash), role_id=VALUES(role_id);
 
 CREATE TABLE IF NOT EXISTS servers (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -176,6 +211,51 @@ fi
 
 rm -f "$VERIFY_SCRIPT"
 
+log_info "Génération de la clé SSH pour la connexion aux clients..."
+
+# Déterminer le répertoire home de l'utilisateur qui a lancé sudo
+if [ -n "$SUDO_USER" ]; then
+    ACTUAL_USER="$SUDO_USER"
+    ACTUAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+    ACTUAL_USER="root"
+    ACTUAL_HOME="/root"
+fi
+
+SSH_DIR="$ACTUAL_HOME/.ssh"
+SSH_KEY_NAME="monitoring_rsa"
+SSH_PRIVATE_KEY="$SSH_DIR/$SSH_KEY_NAME"
+SSH_PUBLIC_KEY="$SSH_DIR/${SSH_KEY_NAME}.pub"
+
+# Créer le répertoire .ssh si nécessaire
+if [ ! -d "$SSH_DIR" ]; then
+    log_info "Création du répertoire $SSH_DIR..."
+    mkdir -p "$SSH_DIR"
+    chmod 700 "$SSH_DIR"
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$SSH_DIR"
+fi
+
+# Générer la clé SSH si elle n'existe pas déjà
+if [ -f "$SSH_PRIVATE_KEY" ]; then
+    log_info "Clé SSH existante trouvée : $SSH_PRIVATE_KEY"
+    SSH_KEY_EXISTED=true
+else
+    log_info "Génération d'une nouvelle paire de clés SSH..."
+    ssh-keygen -t rsa -b 4096 -f "$SSH_PRIVATE_KEY" -N "" -C "monitoring-system-$(date +%Y%m%d)" >/dev/null 2>&1
+
+    # Définir les bonnes permissions
+    chmod 600 "$SSH_PRIVATE_KEY"
+    chmod 644 "$SSH_PUBLIC_KEY"
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$SSH_PRIVATE_KEY"
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$SSH_PUBLIC_KEY"
+
+    log_info "Paire de clés SSH générée avec succès"
+    SSH_KEY_EXISTED=false
+fi
+
+# Lire le contenu de la clé publique
+SSH_PUBLIC_KEY_CONTENT=$(cat "$SSH_PUBLIC_KEY")
+
 echo ""
 echo "============================================"
 echo "Configuration terminée avec succès"
@@ -186,9 +266,53 @@ echo "Utilisateur     : logs_user"
 echo "Mot de passe    : $DB_PASSWORD"
 echo "Host            : localhost"
 echo ""
+echo "Tables créées   : roles (3), users (1), servers (0)"
 echo "Venv Python     : $VENV_DIR"
 echo ""
-echo "Vous pouvez désormais utiliser l'application en executant le script run_app.sh dans le dossier du projet."
+echo "Utilisateur admin créé :"
+echo "  Username : admin"
+echo "  Password : admin"
+echo "  Role     : admin (tous les privilèges)"
+echo ""
+echo "IMPORTANT : Changez le mot de passe admin après la première connexion !"
+echo ""
+echo "Paquets Python installés :"
+echo "  - mysql-connector-python"
+echo "  - sqlalchemy ~2.0.43"
+echo "  - flask ~3.1.2"
+echo "  - flask-login ~0.6.3"
+echo "  - werkzeug ~3.1.3"
+echo "  - pyyaml ~6.0.3"
+echo "  - paramiko ~4.0.0"
+echo "  - fabric2 ~3.2.2"
+echo "  - gunicorn"
+echo ""
+echo "Clé SSH pour connexion aux clients :"
+if [ "$SSH_KEY_EXISTED" = true ]; then
+    echo "  Clé existante utilisée"
+else
+    echo "  Nouvelle clé générée"
+fi
+echo "  Clé privée  : $SSH_PRIVATE_KEY"
+echo "  Clé publique: $SSH_PUBLIC_KEY"
+echo ""
+echo "============================================"
+echo "CLÉ PUBLIQUE SSH À COPIER"
+echo "============================================"
+echo ""
+echo "$SSH_PUBLIC_KEY_CONTENT"
+echo ""
+echo "============================================"
+echo ""
+echo "IMPORTANT :"
+echo "  1. Copiez la clé publique ci-dessus"
+echo "  2. Sur chaque machine cliente, exécutez :"
+echo "     sudo ./setup_client.sh <ssh_user> '<clé_publique_ssh>'"
+echo "  3. Assurez-vous de mettre à jour config.yaml avec :"
+echo "     - ssh_user: <utilisateur_ssh>"
+echo "     - ssh_priv_key_path: $SSH_PRIVATE_KEY"
+echo ""
+echo "Vous pouvez désormais utiliser l'application en exécutant le script run_app.sh dans le dossier du projet."
 echo ""
 
 exit 0
