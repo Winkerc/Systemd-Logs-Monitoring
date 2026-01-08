@@ -10,29 +10,40 @@ log_error() { echo "[ERROR] $1"; }
 
 show_usage() {
     cat << EOF
-Usage: $0 <password>
+Usage: $0 [config_path] <password>
 
 Arguments:
-    <password>    Mot de passe pour l'utilisateur MySQL 'logs_user'
-                  Ce mot de passe doit être identique à celui défini
-                  dans config.yaml du projet.
+    [config_path]      (Optionnel) Le chemin vers lequel sera créé le fichier config.
+                       Par défaut: /etc/monitoring/config.yaml
+                       Ce fichier contiendra les informations sensibles (mot de passe MariaDB,
+                       chemin de la clé SSH, utilisateur SSH).
 
-Exemple:
-    $0 mon_mot_de_passe_securise
+    <password>         Mot de passe pour l'utilisateur MySQL 'logs_user'
+                       Ce mot de passe sera stocké dans le fichier de configuration sécurisé.
 
 Note: Ce script doit être exécuté en tant que root.
       Un utilisateur admin (admin/admin) sera créé automatiquement dans la base de donnée.
+
+Exemple:
+    $0 admin                                    # Utilise /etc/monitoring/config.yaml
+    $0 /opt/monitoring/config.yaml admin       # Utilise un chemin personnalisé
 EOF
     exit 1
 }
 
-if [ $# -ne 1 ]; then
+# Gestion des arguments
+if [ $# -eq 1 ]; then
+    CONFIG_PATH="/etc/monitoring/config.yaml"
+    DB_PASSWORD="$1"
+elif [ $# -eq 2 ]; then
+    CONFIG_PATH="$1"
+    DB_PASSWORD="$2"
+else
     log_error "Nombre d'arguments incorrect"
     echo ""
     show_usage
 fi
 
-DB_PASSWORD="$1"
 
 if [[ $EUID -ne 0 ]]; then
    log_error "Ce script doit être exécuté en tant que root"
@@ -102,6 +113,9 @@ log_info "Installation de PyYAML..."
 log_info "Installation de Paramiko et Fabric2..."
 "$VENV_DIR/bin/pip" install --quiet "paramiko~=4.0.0"
 "$VENV_DIR/bin/pip" install --quiet --index-url https://pypi.python.org/simple "fabric2~=3.2.2"
+
+log_info "Installation de python-dotenv..."
+"$VENV_DIR/bin/pip" install --quiet "python-dotenv"
 
 log_info "Toutes les dépendances Python ont été installées"
 
@@ -256,6 +270,70 @@ fi
 # Lire le contenu de la clé publique
 SSH_PUBLIC_KEY_CONTENT=$(cat "$SSH_PUBLIC_KEY")
 
+# Créer le fichier de configuration sécurisé
+log_info "Création du fichier de configuration sécurisé : $CONFIG_PATH"
+
+# Créer le répertoire parent si nécessaire
+CONFIG_DIR=$(dirname "$CONFIG_PATH")
+if [ ! -d "$CONFIG_DIR" ]; then
+    log_info "Création du répertoire : $CONFIG_DIR"
+    mkdir -p "$CONFIG_DIR"
+    chmod 755 "$CONFIG_DIR"
+fi
+
+# Demander le nom d'utilisateur SSH pour la connexion aux clients
+echo ""
+read -p "Entrez le nom d'utilisateur SSH pour la connexion aux clients (par défaut: $ACTUAL_USER, recommandé : monitoring_user): " SSH_USER_INPUT
+SSH_USER="${SSH_USER_INPUT:-$ACTUAL_USER}" # Si l'utilisateur n'entre rien, utiliser ACTUAL_USER
+
+# Créer le fichier de configuration
+cat > "$CONFIG_PATH" << CFGEOF
+# Configuration sécurisée du système de monitoring
+# Ce fichier contient des informations sensibles - Permissions: 600
+
+# Connexion à la base de données MariaDB
+mariadb_logs_user_password: "$DB_PASSWORD"
+
+# Configuration SSH pour la connexion aux clients
+ssh_user: "$SSH_USER"
+ssh_priv_key_path: "$SSH_PRIVATE_KEY"
+CFGEOF
+
+# Définir les permissions strictes
+chmod 600 "$CONFIG_PATH"
+
+# Si exécuté avec sudo, donner la propriété à l'utilisateur réel
+if [ -n "$SUDO_USER" ]; then
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$CONFIG_PATH"
+else
+    chown root:root "$CONFIG_PATH"
+fi
+
+log_info "Fichier de configuration créé avec succès avec permissions 600"
+
+# Créer le fichier .env dans le répertoire du projet pour l'application
+log_info "Création du fichier .env dans le projet..."
+
+# Déterminer le répertoire du script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ENV_FILE="$SCRIPT_DIR/.env"
+
+cat > "$ENV_FILE" << ENVEOF
+# Configuration générée automatiquement par setup_database.sh
+# Date: $(date '+%Y-%m-%d %H:%M:%S')
+
+# Chemin du fichier de configuration sécurisé
+PATH_CONFIG=$CONFIG_PATH
+ENVEOF
+
+# Permissions pour .env
+chmod 600 "$ENV_FILE"
+if [ -n "$SUDO_USER" ]; then
+    chown "$ACTUAL_USER:$ACTUAL_USER" "$ENV_FILE"
+fi
+
+log_info "Fichier .env créé : $ENV_FILE"
+
 echo ""
 echo "============================================"
 echo "Configuration terminée avec succès"
@@ -265,6 +343,12 @@ echo "Base de données : logs_db"
 echo "Utilisateur     : logs_user"
 echo "Mot de passe    : $DB_PASSWORD"
 echo "Host            : localhost"
+echo ""
+echo "Fichier de configuration sécurisé :"
+echo "  Chemin      : $CONFIG_PATH"
+echo "  Permissions : 600"
+echo "  Propriétaire: $ACTUAL_USER"
+echo "  Contenu     : mariadb_logs_user_password, ssh_user, ssh_priv_key_path"
 echo ""
 echo "Tables créées   : roles (3), users (1), servers (0)"
 echo "Venv Python     : $VENV_DIR"
@@ -286,6 +370,7 @@ echo "  - pyyaml ~6.0.3"
 echo "  - paramiko ~4.0.0"
 echo "  - fabric2 ~3.2.2"
 echo "  - gunicorn"
+echo "  - python-dotenv"
 echo ""
 echo "Clé SSH pour connexion aux clients :"
 if [ "$SSH_KEY_EXISTED" = true ]; then
@@ -295,6 +380,7 @@ else
 fi
 echo "  Clé privée  : $SSH_PRIVATE_KEY"
 echo "  Clé publique: $SSH_PUBLIC_KEY"
+echo "  Utilisateur : $SSH_USER"
 echo ""
 echo "============================================"
 echo "CLÉ PUBLIQUE SSH À COPIER"
@@ -304,15 +390,25 @@ echo "$SSH_PUBLIC_KEY_CONTENT"
 echo ""
 echo "============================================"
 echo ""
-echo "IMPORTANT :"
-echo "  1. Copiez la clé publique ci-dessus"
-echo "  2. Sur chaque machine cliente, exécutez :"
-echo "     sudo ./setup_client.sh <ssh_user> '<clé_publique_ssh>'"
-echo "  3. Assurez-vous de mettre à jour config.yaml avec :"
-echo "     - ssh_user: <utilisateur_ssh>"
-echo "     - ssh_priv_key_path: $SSH_PRIVATE_KEY"
+echo "## REMONTEZ AVANT LA CLÉ PRIVÉE SSH POUR INFOS SUR L'INSTALLATION ! ##"
 echo ""
-echo "Vous pouvez désormais utiliser l'application en exécutant le script run_app.sh dans le dossier du projet."
+echo "IMPORTANT - CONFIGURATION DE L'APPLICATION :"
+echo "  1. Le fichier .env a été créé automatiquement dans le projet"
+echo "     Il contient : PATH_CONFIG=$CONFIG_PATH"
+echo ""
+echo "  2. Copiez la clé publique SSH ci-dessus"
+echo ""
+echo "  3. Sur chaque machine cliente, exécutez :"
+echo "     sudo ./setup_client.sh $SSH_USER '<clé_publique_ssh>'"
+echo ""
+echo "  4. Pour lancer l'application :"
+echo "     - Mode développement : python3 run_dev.py"
+echo "     - Mode production    : ./run_app.sh"
+echo ""
+echo "  Note : La configuration est automatique via le fichier .env"
+echo "         Aucune modification manuelle n'est nécessaire"
+echo ""
+echo "Vous pouvez désormais utiliser l'application !"
 echo ""
 
 exit 0

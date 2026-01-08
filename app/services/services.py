@@ -15,7 +15,7 @@ def load_config(filename):
         return config
 
 
-def get_syslog(host:str, lines:int=100, config_path:str="config.yaml") -> tuple:
+def get_syslog(host:str, lines:int=100, config_path:str=None) -> tuple:
     """
     Récupère les n dernières lignes du syslog d'un hôte distant via SSH.
 
@@ -23,6 +23,13 @@ def get_syslog(host:str, lines:int=100, config_path:str="config.yaml") -> tuple:
 
     resultat = ""
     cnx = None
+
+    # Si config_path n'est pas fourni, utiliser PATH_CONFIG
+    if config_path is None:
+        config_path = os.environ.get('PATH_CONFIG')
+        if not config_path:
+            resultat = "ERREUR : La variable d'environnement 'PATH_CONFIG' n'est pas définie et aucun config_path n'a été fourni."
+            return resultat, 1
 
     # Chargement de la config
     try:

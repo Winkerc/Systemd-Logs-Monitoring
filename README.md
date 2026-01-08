@@ -88,8 +88,12 @@ cd /path/to/project
 # Rendre les scripts exécutables
 chmod +x setup_database.sh run_app.sh
 
-# Lancer l'installation (remplacer 'mot_de_passe' par un mot de passe sécurisé. Il s'agit du mot de passe pour l'utilisateur MariaDB 'logs_user')
+# Lancer l'installation
+# Option 1 : Utiliser le chemin par défaut (/etc/monitoring/config.yaml)
 sudo ./setup_database.sh mot_de_passe
+
+# Option 2 : Spécifier un chemin personnalisé
+sudo ./setup_database.sh /opt/monitoring/config.yaml mot_de_passe
 ```
 
 **Ce script va effectuer les actions suivantes :**
@@ -100,20 +104,37 @@ sudo ./setup_database.sh mot_de_passe
 - Créer la base de données `logs_db` avec les tables nécessaires
 - Créer un utilisateur admin par défaut (admin/admin)
 - Générer automatiquement une paire de clés SSH (`~/.ssh/monitoring_rsa`)
+- **Créer le fichier de configuration sécurisé** contenant :
+  - Le mot de passe MariaDB
+  - L'utilisateur SSH
+  - Le chemin de la clé privée SSH
 - Afficher la clé publique SSH à copier
 
-**Note importante :**
-À la fin du script, copiez la clé publique SSH affichée, vous en aurez besoin pour les clients.
+**Notes importantes :**
 
-### Configuration du fichier config.yaml
+1. **Fichier de configuration sécurisé** : Le script crée automatiquement un fichier `config.yaml` dans le répertoire spécifié (par défaut `/etc/monitoring/config.yaml`) avec des permissions 600 pour protéger les informations sensibles.
 
-Modifiez le fichier `config.yaml` avec vos paramètres :
+2. **Fichier .env** : Le script crée automatiquement un fichier `.env` dans le répertoire du projet contenant la variable `PATH_CONFIG` qui pointe vers le fichier de configuration sécurisé. Ce fichier est chargé automatiquement par l'application.
 
-```yaml
-ssh_user: "qamu" # L'utilisateur SSH sur les clients que vous avez défini lors de l'installation avec setup_client.sh
-ssh_priv_key_path: "/home/qamu/.ssh/id_rsa_SAE302" # Chemin vers la clé privée SSH générée
-mariadb_logs_user_password: "admin" # Mot de passe définis lors de l'exécution de setup_database.sh
+3. **Utilisateur SSH** : Le script vous demandera de saisir le nom d'utilisateur SSH qui sera utilisé pour se connecter aux machines clientes (par défaut : votre nom d'utilisateur actuel).
+
+4. **Clé publique SSH** : À la fin du script, copiez la clé publique SSH affichée, vous en aurez besoin pour les clients.
+
+### Configuration de l'application
+
+**Configuration automatique** : Après l'installation, la configuration est **automatique** ! Le fichier `.env` créé par `setup_database.sh` contient déjà le bon chemin vers le fichier de configuration sécurisé.
+
+**Si vous avez besoin de modifier le chemin** (rare) :
+```bash
+# Éditez le fichier .env
+nano .env
+
+# Modifiez la ligne :
+PATH_CONFIG=/votre/chemin/personnalisé/config.yaml
 ```
+
+**Note de sécurité :**
+- Le vrai fichier de configuration avec les credentials est stocké de manière sécurisée (permissions 600).
 
 ### Installation sur les Machines Clientes
 
@@ -130,9 +151,12 @@ ssh user@ip
 chmod +x /tmp/setup_client.sh
 
 # Lancer l'installation (remplacer par votre clé publique et nom d'utilisateur)
-sudo /tmp/setup_client.sh 'ssh-rsa AAAAB3NzaC1yc2E...' monitoring_user
+sudo /tmp/setup_client.sh monitoring_user 'ssh-rsa AAAAB3NzaC1yc2E...'
 ```
-**⚠️Important⚠️ :** Remplacez `'ssh-rsa AAAAB3NzaC1yc2E...'` par la clé publique SSH générée lors de l'installation du serveur de monitoring, et `monitoring_user` par le nom d'utilisateur que vous souhaitez créer (par défaut `qamu`), celui ci devra etre le meme que le user défini dans `config.yaml`.
+**⚠️Important⚠️ :** 
+- Remplacez `monitoring_user` par le nom d'utilisateur SSH que vous avez défini lors de l'installation du serveur (celui que vous avez saisi quand setup_database.sh vous l'a demandé)
+- Remplacez `'ssh-rsa AAAAB3NzaC1yc2E...'` par la clé publique SSH complète affichée à la fin de setup_database.sh
+- Cet utilisateur **doit être le même** que celui défini dans le fichier de configuration sécurisé
 
 **Ce script va effectuer les actions suivantes :**
 - Créer l'utilisateur SSH spécifié
@@ -243,7 +267,15 @@ sudo systemctl status mariadb
 # Tester la connexion
 mysql -u logs_user -p logs_db
 
-# Vérifiez config.yaml
+# Vérifier que PATH_CONFIG est défini
+echo $PATH_CONFIG
+
+# Vérifier que le fichier de config existe
+cat $PATH_CONFIG
+
+# Vérifier les permissions du fichier
+ls -l $PATH_CONFIG
+# Doit être : -rw------- (600)
 ```
 
 ### Problème : Port 5000 déjà utilisé
@@ -276,11 +308,12 @@ SAE302/
 │       ├── serveurs.html       # Gestion des serveurs
 │       ├── utilisateurs.html   # Gestion des utilisateurs
 │       └── journaux.html       # Consultation des logs
-├── config.py                    # Chargement configurations
-├── config.yaml                  # Configuration principale
-├── run_dev.py                   # Point d'entrée Flask
-├── run_app.sh                   # Script de lancement (Gunicorn)
-├── setup_database.sh            # Installation serveur
+├── config.py                    # Chargement configurations (utilise PATH_CONFIG)
+├── .env                         # Variables d'environnement (créé par setup_database.sh)
+├── .gitignore                   # Fichiers à ignorer (inclut config.yaml et .env)
+├── run_dev.py                   # Point d'entrée Flask (dev)
+├── run_app.sh                   # Script de lancement (Gunicorn, prod)
+├── setup_database.sh            # Installation serveur + génération config sécurisé
 ├── setup_client.sh              # Installation client
 └── README.md                    # Documentation
 ```
@@ -342,11 +375,28 @@ git pull  # ou copier les nouveaux fichiers
    chmod 600 ~/.ssh/monitoring_rsa
    chmod 644 ~/.ssh/monitoring_rsa.pub
    ```
-4. **Limitez l'accès SSH** sur les clients uniquement à l'IP du serveur de monitoring
-5. **Sauvegardez régulièrement** la base de données :
+4. **Protégez le fichier de configuration sécurisé** :
+   ```bash
+   # Vérifier les permissions (doit être 600)
+   ls -l /etc/monitoring/config.yaml
+   
+   # Corriger si nécessaire
+   sudo chmod 600 /etc/monitoring/config.yaml
+   ```
+5. **Ne commitez jamais** le fichier `config.yaml` avec des credentials réels (il est dans `.gitignore`)
+6. **Limitez l'accès SSH** sur les clients uniquement à l'IP du serveur de monitoring
+7. **Sauvegardez régulièrement** la base de données :
    ```bash
    mysqldump -u logs_user -p logs_db > backup_$(date +%Y%m%d).sql
    ```
+
+### Architecture de Sécurité
+
+- **Séparation des credentials** : Le fichier de configuration avec les mots de passe est stocké hors du projet (par défaut `/etc/monitoring/config.yaml`)
+- **Permissions strictes** : Le fichier de configuration a des permissions 600 (lecture/écriture uniquement pour le propriétaire)
+- **Fichier .env** : Contient uniquement le chemin vers le fichier de configuration, pas de credentials
+- **Git ignore** : Les fichiers `config.yaml` et `.env` sont ignorés par Git pour éviter les commits accidentels
+- **Configuration automatique** : Le fichier `.env` est créé automatiquement par `setup_database.sh` avec le bon chemin
 
 ---
 

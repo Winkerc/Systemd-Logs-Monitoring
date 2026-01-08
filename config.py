@@ -1,7 +1,25 @@
 import os
 from app.services import load_config
 
-cfg = load_config("config.yaml")
+# Récupérer le chemin du fichier de configuration depuis la variable d'environnement
+config_path = os.environ.get('PATH_CONFIG')
+
+if not config_path:
+    raise EnvironmentError(
+        "ERREUR : La variable d'environnement 'PATH_CONFIG' n'est pas définie.\n"
+        "Veuillez définir le chemin du fichier de configuration sécurisé :\n"
+        "  export PATH_CONFIG='/etc/monitoring/config.yaml'\n"
+        "Ou modifiez run_dev.py pour définir cette variable."
+    )
+
+if not os.path.exists(config_path):
+    raise FileNotFoundError(
+        f"ERREUR : Le fichier de configuration '{config_path}' n'existe pas.\n"
+        "Veuillez exécuter setup_database.sh pour créer ce fichier."
+    )
+
+# Charger la configuration depuis le fichier sécurisé
+cfg = load_config(config_path)
 password = cfg['mariadb_logs_user_password']
 
 class Config:

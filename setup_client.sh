@@ -20,7 +20,7 @@ Arguments:
 
     [nom_utilisateur]     Nom de l'utilisateur qui sera créé sur cette machine
                           pour permettre la connexion SSH et l'exécution des
-                          commandes de monitoring (défaut: qamu)
+                          commandes de monitoring (défaut: qamu, recommandé : monitoring_user)
 
 Exemple:
     $0 "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... qamu@server" qamu
