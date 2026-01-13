@@ -17,28 +17,28 @@
             <a href="{{ url_for('main.index') }}" class="nav-link">Accueil</a>
           {% endif %}
 
-          {% if request.endpoint == 'main.journaux' %}
+          {% if request.endpoint == 'journaux.liste' or request.endpoint == 'journaux.charger' %}
             <span class="nav-link" aria-current="page">Journaux</span>
           {% else %}
-            <a href="{{ url_for('main.journaux') }}" class="nav-link">Journaux</a>
+            <a href="{{ url_for('journaux.liste') }}" class="nav-link">Journaux</a>
           {% endif %}
 
-          {% if request.endpoint == 'main.serveurs' %}
+          {% if request.endpoint == 'serveurs.liste' %}
             <span class="nav-link" aria-current="page">Serveurs</span>
           {% else %}
-            <a href="{{ url_for('main.serveurs') }}" class="nav-link">Serveurs</a>
+            <a href="{{ url_for('serveurs.liste') }}" class="nav-link">Serveurs</a>
           {% endif %}
 
-          {% if request.endpoint == 'main.utilisateurs' %}
+          {% if request.endpoint == 'utilisateurs.liste' %}
             <span class="nav-link" aria-current="page">Utilisateurs</span>
           {% else %}
-            <a href="{{ url_for('main.utilisateurs') }}" class="nav-link">Utilisateurs</a>
+            <a href="{{ url_for('utilisateurs.liste') }}" class="nav-link">Utilisateurs</a>
           {% endif %}
 
-          {% if request.endpoint == 'main.logout' %}
+          {% if request.endpoint == 'auth.logout' %}
             <span class="nav-link" aria-current="page">Déconnexion</span>
           {% else %}
-            <a href="{{ url_for('main.logout') }}" class="nav-link">Déconnexion</a>
+            <a href="{{ url_for('auth.logout') }}" class="nav-link">Déconnexion</a>
           {% endif %}
 
           {% if current_user.is_authenticated %}

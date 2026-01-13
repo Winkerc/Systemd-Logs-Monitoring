@@ -24,13 +24,11 @@
 
 
                     <td>
-                        <form method="POST" action="{{ url_for('main.serveurs') }}">
-                            <input type="hidden" name="server_id_ping" value="{{ server.id }}">
+                        <form method="POST" action="{{ url_for('serveurs.ping', server_id=server.id) }}">
                             <button type="submit" class="btn">Tester</button>
                         </form>
 
-                        <form method="POST" action="{{ url_for('main.serveurs') }}">
-                            <input type="hidden" name="del_serv_id" value="{{ server.id }}">
+                        <form method="POST" action="{{ url_for('serveurs.supprimer', server_id=server.id) }}">
                             <button type="submit" class="btn btn-danger">Supprimer</button>
                         </form>
                     </td>
@@ -48,7 +46,7 @@
     <hr>
 
     <h3>Ajouter un serveur</h3>
-        <form method="POST" action="{{ url_for('main.serveurs') }}" class="form-inline form-modify">
+        <form method="POST" action="{{ url_for('serveurs.ajouter') }}" class="form-inline form-modify">
           <div class="form-group">
             <label for="name">Nom du serveur</label>
             <input type="text" id="name" name="name" placeholder="serveur1" required>
@@ -73,7 +71,7 @@
     <hr>
 
         <h3>Modifier un serveur</h3>
-        <form method="POST" action="{{ url_for('main.serveurs') }}" class="form-inline form-modify">
+        <form method="POST" id="form-modif-serveur" class="form-inline form-modify">
 
             <div class="form-group">
                 <label for="modif_id_server">Serveur</label>
@@ -105,6 +103,17 @@
         <button type="reset" class="btn btn-outline">Réinitialiser</button>
       </div>
     </form>
+
+    <script>
+        document.getElementById('form-modif-serveur').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var serverId = document.getElementById('modif_id_server').value;
+            if (serverId) {
+                this.action = "{{ url_for('serveurs.modifier', server_id=0) }}".replace('/0/', '/' + serverId + '/');
+                this.submit();
+            }
+        });
+    </script>
 
 </div>
 {% endblock %}

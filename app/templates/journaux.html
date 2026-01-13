@@ -4,7 +4,7 @@
 
     <h2>Consultation des Journaux</h2>
 
-    <form method="POST" action="{{ url_for('main.journaux') }}" class="form-inline">
+    <form method="POST" action="{{ url_for('journaux.charger') }}" class="form-inline">
         <div class="form-group">
             <label for="id_serv_select">Serveurs (Ctrl + clic pour sélectionner plusieurs)</label>
             <select id="id_serv_select" name="id_serv_select" multiple size="5" required>

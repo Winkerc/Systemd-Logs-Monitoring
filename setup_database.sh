@@ -54,7 +54,10 @@ log_info "Configuration de la base de données pour le monitoring..."
 
 if ! command -v mysql &> /dev/null; then # command -v vérifie si une commande existe dans le système, sans l'exécuter.
     log_info "Installation de MariaDB..."
-    apt-get update -qq DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends mariadb-server mariadb-client  # Installer MariaDB sans les paquets recommandés pour minimiser l'installation
+    apt-get update -qq
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+        --no-install-recommends \
+        mariadb-server mariadb-client  # Installer MariaDB sans les paquets recommandés pour minimiser l'installation
     systemctl enable mariadb
     systemctl start mariadb
 else

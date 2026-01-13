@@ -21,8 +21,7 @@
 
           <tr>
             <td>
-              <form method="POST" action="{{ url_for('main.utilisateurs') }}">
-                <input type="hidden" name="user_id_del" value="{{ user.id }}">
+              <form method="POST" action="{{ url_for('utilisateurs.supprimer', user_id=user.id) }}">
                 <button type="submit" class="btn btn-danger">Supprimer</button>
               </form>
             </td>
@@ -54,7 +53,7 @@
     <hr>
 
     <h3>Ajouter un nouvel utilisateur</h3>
-    <form method="POST" action="{{ url_for('main.utilisateurs') }}" class="form-inline">
+    <form method="POST" action="{{ url_for('utilisateurs.ajouter') }}" class="form-inline">
       <div class="form-group">
         <label for="username">Nom d'utilisateur</label>
         <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required>
@@ -89,7 +88,7 @@
     <hr>
 
     <h3>Modifier un utilisateur</h3>
-    <form method="POST" action="{{ url_for('main.utilisateurs') }}" class="form-inline form-modify">
+    <form method="POST" id="form-modif-utilisateur" class="form-inline form-modify">
 
       <div class="form-group">
         <label for="id_user_modif">Utilisateur</label>
@@ -132,6 +131,17 @@
       </div>
 
     </form>
+
+    <script>
+        document.getElementById('form-modif-utilisateur').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var userId = document.getElementById('id_user_modif').value;
+            if (userId) {
+                this.action = "{{ url_for('utilisateurs.modifier', user_id=0) }}".replace('/0/', '/' + userId + '/');
+                this.submit();
+            }
+        });
+    </script>
 
 </div>
 

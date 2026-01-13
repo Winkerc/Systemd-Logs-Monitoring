@@ -10,7 +10,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
 
-    login_manager.login_view = 'main.login'
+    login_manager.login_view = 'auth.login'
     login_manager.login_message = "Veuillez vous connecter pour accéder à cette page."
     login_manager.login_message_category = "info"
 
