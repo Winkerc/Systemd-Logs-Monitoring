@@ -4,7 +4,7 @@
 # Charger les variables d'environnement depuis .env
 if [ -f .env ]; then
     echo "Chargement de la configuration depuis .env..."
-    export $(cat .env | grep -v '^#' | xargs)
+    export $(cat .env | grep -v '^#' | xargs)  # Exporte les variables d'environnement définies dans .env, xargs convertit les lignes en arguments sur une seule ligne, séparés par des espaces.
 else
     echo "AVERTISSEMENT : Fichier .env introuvable"
     echo "Veuillez exécuter setup_database.sh pour le créer automatiquement"

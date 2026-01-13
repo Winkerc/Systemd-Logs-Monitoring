@@ -62,7 +62,7 @@ log_info "Configuration pour l'utilisateur ${USERNAME}..."
 log_info "Machine: $(hostname)"
 
 # Installer sudo si nécessaire
-if ! command -v sudo &> /dev/null; then
+if ! command -v sudo &> /dev/null; then  # command -v vérifie si une commande existe dans le système, sans l'exécuter.
     log_warn "Installation de sudo..."
     apt-get update -qq && apt-get install -y -qq sudo
 fi
@@ -70,7 +70,7 @@ fi
 # Installer python3 si nécessaire
 if ! command -v python3 &> /dev/null; then
     log_warn "Installation de python3..."
-    apt-get update -qq && apt-get install -y -qq python3
+    apt-get update -qq && apt-get install -y -qq python3  # -qq sert à réduire la verbosité de la sortie.
 fi
 
 # Créer l'utilisateur
@@ -83,7 +83,7 @@ fi
 
 # Configuration sudo
 log_info "Configuration de sudo..."
-mkdir -p /etc/sudoers.d
+mkdir -p /etc/sudoers.d  # -p crée le répertoire s'il n'existe pas déjà.
 echo "${USERNAME} ALL=(ALL) NOPASSWD: /usr/bin/tail -n * /var/log/syslog" > /etc/sudoers.d/${USERNAME}
 chmod 0440 /etc/sudoers.d/${USERNAME}
 
@@ -130,13 +130,13 @@ echo "command=\"/usr/local/bin/filter_ssh_commands_${USERNAME}.py\",no-port-forw
 chmod 600 "$AUTH_KEYS"
 
 # Changer le propriétaire
-chown -R ${USERNAME}:${USERNAME} "$SSH_DIR"
+chown -R ${USERNAME}:${USERNAME} "$SSH_DIR"  # -R change le propriétaire de manière récursive.
 
 # Activer PubkeyAuthentication
 log_info "Configuration du serveur SSH..."
 SSHD_CONFIG="/etc/ssh/sshd_config"
-if ! grep -q "^PubkeyAuthentication yes" "$SSHD_CONFIG"; then
-    sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' "$SSHD_CONFIG"
+if ! grep -q "^PubkeyAuthentication yes" "$SSHD_CONFIG"; then  # -q pour grep supprime la sortie normale, on s'intéresse seulement au code de retour.
+    sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' "$SSHD_CONFIG"  # sed -i modifie le fichier en place.
 fi
 
 # Redémarrer SSH

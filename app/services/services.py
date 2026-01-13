@@ -92,14 +92,3 @@ def get_syslog(host:str, lines:int=100, config_path:str=None) -> tuple:
                 cnx.close()
             except:
                 pass
-
-"""
-logs, exit_code = get_syslog("192.168.122.56", 10, config_path="../../config.yaml")
-
-if exit_code == 0:
-    print(logs)
-
-exit(exit_code)
-
-print(get_syslog("192.168.122.56",10))
-"""

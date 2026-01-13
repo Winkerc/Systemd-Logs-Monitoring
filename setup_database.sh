@@ -32,7 +32,7 @@ EOF
 }
 
 # Gestion des arguments
-if [ $# -eq 1 ]; then
+if [ $# -eq 1 ]; then  # $# compte le nombre d'arguments passés au script
     CONFIG_PATH="/etc/monitoring/config.yaml"
     DB_PASSWORD="$1"
 elif [ $# -eq 2 ]; then
@@ -45,19 +45,16 @@ else
 fi
 
 
-if [[ $EUID -ne 0 ]]; then
+if [[ $EUID -ne 0 ]]; then  # $EUID contient l'ID utilisateur effectif
    log_error "Ce script doit être exécuté en tant que root"
    exit 1
 fi
 
 log_info "Configuration de la base de données pour le monitoring..."
 
-if ! command -v mysql &> /dev/null; then
+if ! command -v mysql &> /dev/null; then # command -v vérifie si une commande existe dans le système, sans l'exécuter.
     log_info "Installation de MariaDB..."
-    apt-get update -qq
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-        --no-install-recommends \
-        mariadb-server mariadb-client
+    apt-get update -qq DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends mariadb-server mariadb-client  # Installer MariaDB sans les paquets recommandés pour minimiser l'installation
     systemctl enable mariadb
     systemctl start mariadb
 else
@@ -71,7 +68,7 @@ else
     log_info "Python3 déjà installé"
 fi
 
-if ! dpkg -l | grep -q python3-venv; then
+if ! dpkg -l | grep -q python3-venv; then  # dpkg -l liste les paquets installés, grep -q vérifie silencieusement la présence du paquet
     log_info "Installation de python3-venv..."
     apt-get install -y -qq python3-venv
 fi
@@ -112,7 +109,7 @@ log_info "Installation de PyYAML..."
 
 log_info "Installation de Paramiko et Fabric2..."
 "$VENV_DIR/bin/pip" install --quiet "paramiko~=4.0.0"
-"$VENV_DIR/bin/pip" install --quiet --index-url https://pypi.python.org/simple "fabric2~=3.2.2"
+"$VENV_DIR/bin/pip" install --quiet --index-url https://pypi.python.org/simple "fabric2~=3.2.2"  # Spécifier l'index pour éviter les problèmes de résolution de dépendances (cela m'a cosé certains soucis)
 
 log_info "Installation de python-dotenv..."
 "$VENV_DIR/bin/pip" install --quiet "python-dotenv"
@@ -169,7 +166,7 @@ CREATE TABLE IF NOT EXISTS servers (
 );
 EOF
 
-if mysql -u root < "$SQL_FILE" 2>&1; then
+if mysql -u root < "$SQL_FILE" 2>&1; then  # 2>&1 redirige stderr vers stdout pour capturer les erreurs
     log_info "Base de données configurée avec succès"
 else
     log_error "Erreur lors de la configuration de la base de données"
@@ -257,7 +254,7 @@ else
     log_info "Génération d'une nouvelle paire de clés SSH..."
     ssh-keygen -t rsa -b 4096 -f "$SSH_PRIVATE_KEY" -N "" -C "monitoring-system-$(date +%Y%m%d)" >/dev/null 2>&1
 
-    # Définir les bonnes permissions
+    # Définir les bonnes permissions pour securiser
     chmod 600 "$SSH_PRIVATE_KEY"
     chmod 644 "$SSH_PUBLIC_KEY"
     chown "$ACTUAL_USER:$ACTUAL_USER" "$SSH_PRIVATE_KEY"
@@ -287,6 +284,7 @@ read -p "Entrez le nom d'utilisateur SSH pour la connexion aux clients (par déf
 SSH_USER="${SSH_USER_INPUT:-$ACTUAL_USER}" # Si l'utilisateur n'entre rien, utiliser ACTUAL_USER
 
 # Créer le fichier de configuration
+# CFGEOF 	Pour des fichiers de config
 cat > "$CONFIG_PATH" << CFGEOF
 # Configuration sécurisée du système de monitoring
 # Ce fichier contient des informations sensibles - Permissions: 600
@@ -303,7 +301,7 @@ CFGEOF
 chmod 600 "$CONFIG_PATH"
 
 # Si exécuté avec sudo, donner la propriété à l'utilisateur réel
-if [ -n "$SUDO_USER" ]; then
+if [ -n "$SUDO_USER" ]; then  # -n vérifie si une variable n'est pas vide
     chown "$ACTUAL_USER:$ACTUAL_USER" "$CONFIG_PATH"
 else
     chown root:root "$CONFIG_PATH"
@@ -315,7 +313,7 @@ log_info "Fichier de configuration créé avec succès avec permissions 600"
 log_info "Création du fichier .env dans le projet..."
 
 # Déterminer le répertoire du script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" # $BASH_SOURCE[0] = le script actuel, dirname retourne le répertoire parent, cd change de répertoire, pwd affiche le répertoire courant.
 ENV_FILE="$SCRIPT_DIR/.env"
 
 cat > "$ENV_FILE" << ENVEOF

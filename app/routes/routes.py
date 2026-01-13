@@ -326,5 +326,3 @@ def extract_timestamp(log_line):
         return dt.replace(tzinfo=None)
     except (ValueError, IndexError):
         return datetime.min
-
-# TODO : Corriger le style de la partie modif d'utilisateur dans utilisateurs.html
